@@ -1,6 +1,19 @@
 {
   "permissions": {
-    "deny": ["Edit(tracker/**)"],
+    "allow": [
+      "Bash(make test)",
+      "Bash(make lint-contract)",
+      "Bash(pytest:*)",
+      "Edit(tests/**)",
+      "Bash(git push:*)",
+      "Bash(curl * https://api.github.com/repos/RB-art/m1-lab/pulls*)"
+    ],
+    "deny": [
+      "Edit(tracker/**)",
+      "Edit(.claude/settings.json)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ],
     "disableBypassPermissionsMode": "disable"
   }
 }
