@@ -102,6 +102,54 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /topics:
+    get:
+      tags: [Iesniegumi]
+      operationId: listTopics
+      summary: Iesniegumu tēmu saraksts
+      description: |
+        Visas tēmas, ko var norādīt laukā `topic` (CR-0). E-pakalpojums
+        tēmu sarakstu ņem no šī galapunkta, nevis uztur pats.
+        Secība ir fiksēta, `OTHER` vienmēr ir pēdējā.
+      responses:
+        '200':
+          description: Tēmu saraksts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicItem'
+              example:
+                - code: ROADS
+                  name: Ceļi un ielas
+                - code: WASTE
+                  name: Atkritumi
+                - code: PLANNING
+                  name: Teritorijas plānošana
+                - code: PARKS
+                  name: Parki un skvēri
+                - code: OTHER
+                  name: Cits
+        '400':
+          description: Kļūdains pieprasījums
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tēmu saraksts nav atrasts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Iekšēja servisa kļūda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     Health:
@@ -206,9 +254,22 @@ components:
       description: |
         Iesnieguma tēma:
         `ROADS` Ceļi un ielas · `WASTE` Atkritumi ·
-        `PLANNING` Teritorijas plānošana · `OTHER` Cits
-      enum: [ROADS, WASTE, PLANNING, OTHER]
+        `PLANNING` Teritorijas plānošana · `PARKS` Parki un skvēri ·
+        `OTHER` Cits
+      enum: [ROADS, WASTE, PLANNING, PARKS, OTHER]
       example: ROADS
+
+    TopicItem:
+      type: object
+      description: Viena tēma tēmu sarakstā (CR-0)
+      required: [code, name]
+      properties:
+        code:
+          $ref: '#/components/schemas/Topic'
+        name:
+          type: string
+          description: Tēmas nosaukums, ko rāda iedzīvotājam
+          example: Parki un skvēri
 
     SubmissionStatus:
       type: string
