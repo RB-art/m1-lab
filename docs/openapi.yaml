@@ -176,7 +176,34 @@ components:
       properties:
         personalCode:
           type: string
-          description: Iesniedzēja personas kods
+          description: |
+            Iesniedzēja personas kods (CR-1).
+
+            **Normalizācija.** Serveris noņem atstarpes sākumā un beigās un
+            defisi, ja tā ir tieši pēc 6. cipara. Saglabā 11 ciparus bez
+            defises: `320000-00001` un `" 32000000001 "` → `32000000001`.
+
+            **Pieņemtie formāti** (pēc normalizācijas tieši 11 cipari):
+            - jaunais formāts: sākas ar `32`; kontrolciparu un datumu nepārbauda;
+            - vecais formāts `DDMMGG-CNNNK`: `DDMMGG` dzimšanas datums,
+              `C` gadsimts (`0` → 18xx, `1` → 19xx, `2` → 20xx),
+              `K` kontrolcipars.
+
+            **Kontrolcipars (vecais formāts).** Pirmos 10 ciparus reizina ar
+            svariem `1, 6, 3, 7, 9, 10, 5, 8, 4, 2` un summē;
+            `K = (1101 − summa) mod 11`. Ja rezultāts ir 10, kods nav derīgs.
+
+            **Kļūdas** (`400 VALIDATION_ERROR`, `field: personalCode`,
+            iesniegums netiek saglabāts). Pārbaudes secība: lauks → formāts →
+            datums → kontrolcipars; atgriež pirmo kļūdu:
+            - `REQUIRED`: lauka nav;
+            - `INVALID_FORMAT`: pēc normalizācijas nav tieši 11 cipari
+              (cits garums, burti, defise citā vietā);
+            - `INVALID_DATE`: vecā formāta datums neeksistē, piemēram, 31.02.;
+            - `INVALID_CHECKSUM`: vecā formāta kontrolcipars neatbilst.
+
+            Ārpus apjoma: pārbaude Iedzīvotāju reģistrā, ārvalstnieku
+            identifikatori, jau saglabāto iesniegumu labošana.
           example: '32000000001'
         fullName:
           type: string
@@ -306,6 +333,10 @@ components:
                     example: personalCode
                   issue:
                     type: string
+                    description: |
+                      Kļūdas veids. `personalCode` laukam (CR-1):
+                      `REQUIRED`, `INVALID_FORMAT`, `INVALID_DATE`,
+                      `INVALID_CHECKSUM`.
                     example: INVALID_FORMAT
 
   responses:
@@ -315,13 +346,43 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          example:
-            error:
-              code: VALIDATION_ERROR
-              message: Request validation failed
-              details:
-                - field: personalCode
-                  issue: INVALID_FORMAT
+          examples:
+            personalCodeRequired:
+              summary: Lauka personalCode nav (CR-1)
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Request validation failed
+                  details:
+                    - field: personalCode
+                      issue: REQUIRED
+            personalCodeInvalidFormat:
+              summary: Personas kods nav 11 cipari (CR-1)
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Request validation failed
+                  details:
+                    - field: personalCode
+                      issue: INVALID_FORMAT
+            personalCodeInvalidDate:
+              summary: Vecā formāta datums neeksistē (CR-1)
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Request validation failed
+                  details:
+                    - field: personalCode
+                      issue: INVALID_DATE
+            personalCodeInvalidChecksum:
+              summary: Vecā formāta kontrolcipars neatbilst (CR-1)
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Request validation failed
+                  details:
+                    - field: personalCode
+                      issue: INVALID_CHECKSUM
     NotFound:
       description: Iesniegums ar šādu ID nav atrasts
       content:
